@@ -4,8 +4,10 @@ import com.challenge.empresas.adapter.in.web.dto.EmpresaRequestDTO;
 import com.challenge.empresas.domain.exception.ValidationException;
 import com.challenge.empresas.domain.model.Empresa;
 import com.challenge.empresas.domain.service.EmpresaService;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -18,8 +20,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/empresas")
+@RequestMapping(value = "/empresas", produces = "application/json")
 @Tag(name = "Empresas", description = "Operaciones relacionadas con la gestión de empresas")
+@OpenAPIDefinition(info = @Info(title = "API Empresas", version = "1.0", description = "Operaciones para gestionar empresas"))
 public class EmpresaController {
 
     private final EmpresaService empresaService;
