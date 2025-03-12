@@ -134,6 +134,12 @@ Controladores (EmpresaControllerTest).
 
 Servicios (EmpresaServiceTest).
 
+### Ejecución de Pruebas Específicas
+
+Si deseas ejecutar pruebas específicas, puedes usar el siguiente comando:
+
+mvn test -Dtest=NombreDeLaClaseDePrueba
+
 ## Cómo Probar la API
 
 ### 1. Obtener empresas con transferencias en el último mes
