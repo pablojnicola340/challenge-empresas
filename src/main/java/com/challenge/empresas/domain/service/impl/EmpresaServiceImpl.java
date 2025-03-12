@@ -1,42 +1,56 @@
 package com.challenge.empresas.domain.service.impl;
 
-import com.challenge.empresas.adapter.in.web.dto.EmpresaRequestDTO;
+import com.challenge.empresas.adapter.out.persistence.AdhesionRepository;
+import com.challenge.empresas.adapter.out.persistence.EmpresaRepository;
 import com.challenge.empresas.domain.exception.ValidationException;
 import com.challenge.empresas.domain.model.Empresa;
-import com.challenge.empresas.domain.model.Adhesion;
-import com.challenge.empresas.adapter.out.persistence.EmpresaRepository;
-import com.challenge.empresas.adapter.out.persistence.TransferenciaRepository;
-import com.challenge.empresas.adapter.out.persistence.AdhesionRepository;
 import com.challenge.empresas.domain.service.EmpresaService;
+import com.challenge.empresas.domain.strategy.FiltroEmpresasStrategy;
+import com.challenge.empresas.infrastructure.factory.EmpresaFactory;
+import com.challenge.empresas.adapter.in.web.dto.EmpresaRequestDTO;
+import com.challenge.empresas.domain.model.Adhesion;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class EmpresaServiceImpl implements EmpresaService {
 
+    private final Map<String, FiltroEmpresasStrategy> estrategias;
     private final EmpresaRepository empresaRepository;
-    private final TransferenciaRepository transferenciaRepository;
     private final AdhesionRepository adhesionRepository;
+    private final EmpresaFactory empresaFactory;
 
     @Autowired
-    public EmpresaServiceImpl(EmpresaRepository empresaRepository, TransferenciaRepository transferenciaRepository, AdhesionRepository adhesionRepository) {
+    public EmpresaServiceImpl(List<FiltroEmpresasStrategy> estrategias,
+                              EmpresaRepository empresaRepository,
+                              AdhesionRepository adhesionRepository,
+                              EmpresaFactory empresaFactory) {
+        this.estrategias = estrategias.stream()
+                .collect(Collectors.toMap(
+                        estrategia -> estrategia.getClass().getSimpleName(),
+                        Function.identity()
+                ));
         this.empresaRepository = empresaRepository;
-        this.transferenciaRepository = transferenciaRepository;
         this.adhesionRepository = adhesionRepository;
+        this.empresaFactory = empresaFactory;
     }
 
     @Override
     public List<Empresa> obtenerEmpresasConTransferenciasUltimoMes() {
-        Date fechaLimite = new Date(System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000); // Últimos 30 días
-        return transferenciaRepository.findDistinctEmpresasByFechaAfter(fechaLimite);
+        Date fechaLimite = calcularFechaLimite(30);
+        return estrategias.get("FiltroTransferenciasUltimoMes").filtrarEmpresas(fechaLimite);
     }
 
     @Override
     public List<Empresa> obtenerEmpresasAdheridasUltimoMes() {
-        Date fechaLimite = new Date(System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000);
-        return adhesionRepository.findEmpresasByFechaAdhesionAfter(fechaLimite);
+        Date fechaLimite = calcularFechaLimite(30);
+        return estrategias.get("FiltroAdhesionUltimoMes").filtrarEmpresas(fechaLimite);
     }
 
     @Override
@@ -48,14 +62,14 @@ public class EmpresaServiceImpl implements EmpresaService {
             throw new ValidationException("La Razón Social es obligatoria");
         }
 
-        Empresa empresa = new Empresa();
-        empresa.setCuit(empresaRequestDTO.getCuit());
-        empresa.setRazonSocial(empresaRequestDTO.getRazonSocial());
-
+        Empresa empresa = empresaFactory.crearEmpresa(empresaRequestDTO);
         empresaRepository.save(empresa);
-        Adhesion adhesion = new Adhesion();
-        adhesion.setEmpresa(empresa);
-        adhesion.setFechaAdhesion(new Date());
+
+        Adhesion adhesion = empresaFactory.crearAdhesion(empresa);
         adhesionRepository.save(adhesion);
+    }
+
+    private Date calcularFechaLimite(int dias) {
+        return new Date(System.currentTimeMillis() - (long) dias * 24 * 60 * 60 * 1000);
     }
 }

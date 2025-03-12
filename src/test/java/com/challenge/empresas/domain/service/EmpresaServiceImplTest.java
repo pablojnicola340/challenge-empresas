@@ -8,9 +8,11 @@ import com.challenge.empresas.domain.exception.ValidationException;
 import com.challenge.empresas.domain.model.Adhesion;
 import com.challenge.empresas.domain.model.Empresa;
 import com.challenge.empresas.domain.service.impl.EmpresaServiceImpl;
+import com.challenge.empresas.domain.strategy.FiltroAdhesionUltimoMes;
+import com.challenge.empresas.domain.strategy.FiltroTransferenciasUltimoMes;
+import com.challenge.empresas.infrastructure.factory.EmpresaFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -33,12 +35,27 @@ class EmpresaServiceImplTest {
     @Mock
     private AdhesionRepository adhesionRepository;
 
-    @InjectMocks
+    @Mock
+    private FiltroTransferenciasUltimoMes filtroTransferenciasUltimoMes;
+
+    @Mock
+    private FiltroAdhesionUltimoMes filtroAdhesionUltimoMes;
+
+    @Mock
+    private EmpresaFactory empresaFactory;
+
     private EmpresaServiceImpl empresaService;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+
+        empresaService = new EmpresaServiceImpl(
+                List.of(filtroTransferenciasUltimoMes, filtroAdhesionUltimoMes),
+                empresaRepository,
+                adhesionRepository,
+                empresaFactory
+        );
     }
 
     @Test
@@ -47,24 +64,24 @@ class EmpresaServiceImplTest {
         Empresa empresa2 = new Empresa("30-87654321-0", "Empresa 2", new Date());
         List<Empresa> empresas = Arrays.asList(empresa1, empresa2);
 
-        when(transferenciaRepository.findDistinctEmpresasByFechaAfter(any(Date.class))).thenReturn(empresas);
+        when(filtroTransferenciasUltimoMes.filtrarEmpresas(any(Date.class))).thenReturn(empresas);
 
         List<Empresa> resultado = empresaService.obtenerEmpresasConTransferenciasUltimoMes();
 
         assertEquals(2, resultado.size());
         assertTrue(resultado.contains(empresa1));
         assertTrue(resultado.contains(empresa2));
-        verify(transferenciaRepository, times(1)).findDistinctEmpresasByFechaAfter(any(Date.class));
+        verify(filtroTransferenciasUltimoMes, times(1)).filtrarEmpresas(any(Date.class));
     }
 
     @Test
     void obtenerEmpresasConTransferenciasUltimoMes_DebeRetornarListaVacia() {
-        when(transferenciaRepository.findDistinctEmpresasByFechaAfter(any(Date.class))).thenReturn(Collections.emptyList());
+        when(filtroTransferenciasUltimoMes.filtrarEmpresas(any(Date.class))).thenReturn(Collections.emptyList());
 
         List<Empresa> resultado = empresaService.obtenerEmpresasConTransferenciasUltimoMes();
 
         assertTrue(resultado.isEmpty());
-        verify(transferenciaRepository, times(1)).findDistinctEmpresasByFechaAfter(any(Date.class));
+        verify(filtroTransferenciasUltimoMes, times(1)).filtrarEmpresas(any(Date.class));
     }
 
     @Test
@@ -73,25 +90,24 @@ class EmpresaServiceImplTest {
         Empresa empresa2 = new Empresa("30-87654321-0", "Empresa 2", new Date());
         List<Empresa> empresas = Arrays.asList(empresa1, empresa2);
 
-        when(adhesionRepository.findEmpresasByFechaAdhesionAfter(any(Date.class))).thenReturn(empresas);
+        when(filtroAdhesionUltimoMes.filtrarEmpresas(any(Date.class))).thenReturn(empresas);
 
         List<Empresa> resultado = empresaService.obtenerEmpresasAdheridasUltimoMes();
 
         assertEquals(2, resultado.size());
         assertTrue(resultado.contains(empresa1));
         assertTrue(resultado.contains(empresa2));
-        verify(adhesionRepository, times(1)).findEmpresasByFechaAdhesionAfter(any(Date.class));
+        verify(filtroAdhesionUltimoMes, times(1)).filtrarEmpresas(any(Date.class));
     }
 
     @Test
     void obtenerEmpresasAdheridasUltimoMes_DebeRetornarListaVacia() {
-        when(adhesionRepository.findEmpresasByFechaAdhesionAfter(any(Date.class))).thenReturn(Collections.emptyList());
+        when(filtroAdhesionUltimoMes.filtrarEmpresas(any(Date.class))).thenReturn(Collections.emptyList());
 
         List<Empresa> resultado = empresaService.obtenerEmpresasAdheridasUltimoMes();
 
         assertTrue(resultado.isEmpty());
-        verify(adhesionRepository, times(1)).findEmpresasByFechaAdhesionAfter(any(Date.class));
-        verify(empresaRepository, never()).findById(anyLong());
+        verify(filtroAdhesionUltimoMes, times(1)).filtrarEmpresas(any(Date.class));
     }
 
     @Test
@@ -102,13 +118,17 @@ class EmpresaServiceImplTest {
         adhesion.setEmpresa(empresa);
         adhesion.setFechaAdhesion(new Date());
 
-        when(empresaRepository.save(any(Empresa.class))).thenReturn(empresa);
-        when(adhesionRepository.save(any(Adhesion.class))).thenReturn(adhesion);
+        when(empresaFactory.crearEmpresa(requestDTO)).thenReturn(empresa);
+        when(empresaFactory.crearAdhesion(empresa)).thenReturn(adhesion);
+        when(empresaRepository.save(empresa)).thenReturn(empresa);
+        when(adhesionRepository.save(adhesion)).thenReturn(adhesion);
 
         empresaService.adherirEmpresa(requestDTO);
 
-        verify(empresaRepository, times(1)).save(any(Empresa.class));
-        verify(adhesionRepository, times(1)).save(any(Adhesion.class));
+        verify(empresaFactory, times(1)).crearEmpresa(requestDTO);
+        verify(empresaFactory, times(1)).crearAdhesion(empresa);
+        verify(empresaRepository, times(1)).save(empresa);
+        verify(adhesionRepository, times(1)).save(adhesion);
     }
 
     @Test
