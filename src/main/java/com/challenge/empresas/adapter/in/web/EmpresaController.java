@@ -1,6 +1,7 @@
 package com.challenge.empresas.adapter.in.web;
 
 import com.challenge.empresas.adapter.in.web.dto.EmpresaRequestDTO;
+import com.challenge.empresas.adapter.in.web.utils.Sanitizer;
 import com.challenge.empresas.domain.exception.ValidationException;
 import com.challenge.empresas.domain.model.Empresa;
 import com.challenge.empresas.domain.service.EmpresaService;
@@ -85,9 +86,23 @@ public class EmpresaController {
     public ResponseEntity<Void> adherirEmpresa(
             @Parameter(description = "Datos de la empresa a adherir", required = true)
             @RequestBody EmpresaRequestDTO empresaRequestDTO) {
+
+        // Sanitizo los datos de entrada para XSS
+        String cuitSanitizado = Sanitizer.sanitizeNumber(empresaRequestDTO.getCuit());
+        String razonSocialSanitizada = Sanitizer.sanitizeString(empresaRequestDTO.getRazonSocial());
+
+        // Sanitizo para SQL Injection (capa adicional de seguridad)
+        cuitSanitizado = Sanitizer.sanitizeForSQL(cuitSanitizado);
+        razonSocialSanitizada = Sanitizer.sanitizeForSQL(razonSocialSanitizada);
+
         if (empresaRequestDTO.getCuit() == null || empresaRequestDTO.getRazonSocial() == null) {
             throw new ValidationException("CUIT y Razón Social son obligatorios");
         }
+
+        // Actualizo el DTO con los datos sanitizados
+        empresaRequestDTO.setCuit(cuitSanitizado);
+        empresaRequestDTO.setRazonSocial(razonSocialSanitizada);
+
         empresaService.adherirEmpresa(empresaRequestDTO);
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
