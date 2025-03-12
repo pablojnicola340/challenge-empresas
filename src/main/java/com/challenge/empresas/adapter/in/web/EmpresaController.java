@@ -35,15 +35,15 @@ public class EmpresaController {
     @GetMapping("/transferencias-ultimo-mes")
     @Operation(
             summary = "Obtener empresas con transferencias en el último mes",
-            description = "Devuelve una lista de empresas que realizaron transferencias en el último mes."
+            description = "Devuelve una lista de empresas que realizaron transferencias en el último mes. Si no hay empresas, se devuelve un código 204 (No Content).",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Empresas encontradas",
+                            content = @Content(mediaType = "application/json",
+                                    schema = @Schema(implementation = Empresa.class))),
+                    @ApiResponse(responseCode = "204", description = "No hay empresas con transferencias en el último mes",
+                            content = @Content)
+            }
     )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Empresas encontradas",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = Empresa.class))),
-            @ApiResponse(responseCode = "204", description = "No hay empresas con transferencias en el último mes",
-                    content = @Content)
-    })
     public ResponseEntity<List<Empresa>> obtenerEmpresasConTransferenciasUltimoMes() {
         List<Empresa> empresas = empresaService.obtenerEmpresasConTransferenciasUltimoMes();
         if (empresas.isEmpty()) {
@@ -55,15 +55,15 @@ public class EmpresaController {
     @GetMapping("/adheridas-ultimo-mes")
     @Operation(
             summary = "Obtener empresas adheridas en el último mes",
-            description = "Devuelve una lista de empresas que se adhirieron en el último mes."
+            description = "Devuelve una lista de empresas que se adhirieron en el último mes. Si no hay empresas, se devuelve un código 204 (No Content).",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Empresas encontradas",
+                            content = @Content(mediaType = "application/json",
+                                    schema = @Schema(implementation = Empresa.class))),
+                    @ApiResponse(responseCode = "204", description = "No hay empresas adheridas en el último mes",
+                            content = @Content)
+            }
     )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Empresas encontradas",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = Empresa.class))),
-            @ApiResponse(responseCode = "204", description = "No hay empresas adheridas en el último mes",
-                    content = @Content)
-    })
     public ResponseEntity<List<Empresa>> obtenerEmpresasAdheridasUltimoMes() {
         List<Empresa> empresas = empresaService.obtenerEmpresasAdheridasUltimoMes();
         if (empresas.isEmpty()) {
@@ -75,16 +75,17 @@ public class EmpresaController {
     @PostMapping
     @Operation(
             summary = "Adherir una nueva empresa",
-            description = "Registra una nueva empresa en el sistema."
+            description = "Registra una nueva empresa en el sistema. Requiere el CUIT y la Razón Social de la empresa.",
+            responses = {
+                    @ApiResponse(responseCode = "201", description = "Empresa adherida correctamente",
+                            content = @Content),
+                    @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos",
+                            content = @Content)
+            }
     )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Empresa adherida correctamente",
-                    content = @Content),
-            @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos",
-                    content = @Content)
-    })
     public ResponseEntity<Void> adherirEmpresa(
-            @Parameter(description = "Datos de la empresa a adherir", required = true)
+            @Parameter(description = "Datos de la empresa a adherir", required = true,
+                    schema = @Schema(implementation = EmpresaRequestDTO.class))
             @RequestBody EmpresaRequestDTO empresaRequestDTO) {
 
         // Sanitizo los datos de entrada para XSS

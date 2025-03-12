@@ -134,6 +134,39 @@ Controladores (EmpresaControllerTest).
 
 Servicios (EmpresaServiceTest).
 
+## Cómo Probar la API
+
+### 1. Obtener empresas con transferencias en el último mes
+
+- Realiza una solicitud GET a `/empresas/transferencias-ultimo-mes`.
+- Verifica que se devuelva una lista de empresas o un código `204` si no hay datos.
+
+### 2. Obtener empresas adheridas en el último mes
+
+- Realiza una solicitud GET a `/empresas/adheridas-ultimo-mes`.
+- Verifica que se devuelva una lista de empresas o un código `204` si no hay datos.
+
+### 3. Adherir una nueva empresa
+
+- Realiza una solicitud POST a `/empresas` con el siguiente cuerpo:
+
+{
+  "cuit": "20345678901",
+  "razonSocial": "Empresa A"
+}
+
+- Verifica que se devuelva un código 201 (Created) si la operación es exitosa.
+
+## Contribuciones
+
+Si deseas contribuir a este proyecto, sigue estos pasos:
+
+1. Haz un fork del repositorio.
+2. Crea una rama para tu contribución (`git checkout -b feature/nueva-funcionalidad`).
+3. Realiza tus cambios y haz commit (`git commit -m "Añade nueva funcionalidad"`).
+4. Haz push a la rama (`git push origin feature/nueva-funcionalidad`).
+5. Abre un Pull Request.
+
 ## Consideraciones
 
 Las fechas de las transferencias están almacenadas en la base de datos.
